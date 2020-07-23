@@ -19,6 +19,32 @@ const Profile = Styled.Image`
 
 const GoogleMap = () => {
   const [user, setUser] = useState({});
+  const [markers, setMarkers] = useState([
+    {
+      title: 'home',
+      coordinates: {
+        latitude: 37.506892,
+        longitude: 127.020445,
+      },
+      image: 'https://nearlog.s3.ap-northeast-2.amazonaws.com/static/home.png',
+    },
+    {
+      title: 'bien',
+      coordinates: {
+        latitude: 37.505973,
+        longitude: 127.022733,
+      },
+      image: 'https://nearlog.s3.ap-northeast-2.amazonaws.com/static/bien.png',
+    },
+    {
+      title: 'bien',
+      coordinates: {
+        latitude: 37.506214,
+        longitude: 127.021748,
+      },
+      image: 'https://nearlog.s3.ap-northeast-2.amazonaws.com/static/dopio.png',
+    },
+  ]);
 
   useEffect(() => {
     axios.get('http://13.209.217.56/api/v1/user').then((response) => {
@@ -32,18 +58,26 @@ const GoogleMap = () => {
       <MapView
         style={{flex: 1}}
         initialRegion={{
-          latitude: 37.78825,
-          longitude: -122.4324,
+          latitude: 37.506706,
+          longitude: 127.021544,
           latitudeDelta: 0.0922,
           longitudeDelta: 0.0421,
         }}
         provider={PROVIDER_GOOGLE}>
         <Marker
-          coordinate={{latitude: 37.78825, longitude: -122.4324}}
+          coordinate={{latitude: 37.506706, longitude: 127.021544}}
           title="this is a marker"
           description="this is a marker example">
           <Profile source={{url: user.profile}} />
         </Marker>
+        {markers.map((marker, index) => (
+          <Marker
+            key={index}
+            coordinate={marker.coordinates}
+            title={marker.title}>
+            <Profile source={{url: marker.image}} />
+          </Marker>
+        ))}
       </MapView>
     </Container>
   );
