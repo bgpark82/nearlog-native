@@ -2,6 +2,7 @@ import React, {useEffect, useState} from 'react';
 import Styled from 'styled-components/native';
 import {Text, Image, Button} from 'react-native';
 import axios from 'axios';
+import ImagePicker from 'react-native-image-picker';
 
 import MapView, {PROVIDER_GOOGLE, Marker} from 'react-native-maps';
 
@@ -11,20 +12,47 @@ const Container = Styled.View`
 `;
 
 const Profile = Styled.Image`
- height: 70;
-    width: 70;
-    borderRadius: 75;
-    borderWidth: 3;
+ height: 70px;
+    width: 70px;
+    borderRadius: 75px;
+    borderWidth: 3px;
     borderColor: rgb(255,255,255);
 `;
 
 const ButtonGroup = Styled.View`
-    flex-direction: row
-    justify-content: center
-    padding: 10px 0px
+    flex-direction: row;
+    justify-content: center;
+    padding: 5px 0px;
+    align-items:center;
+`;
+
+const ImagePickerButton = Styled.TouchableOpacity`
+
+`;
+const ButtonTitle = Styled.Text`
+    fontSize: 18px;
+    color:rgb(29,137,255);
+    fontWeight: 500;
+    padding:10px 15px;
 `;
 
 const GoogleMap = () => {
+  const options = {
+    title: 'Load Photo',
+    customButtons: [
+      {name: 'button_id_1', title: 'CustomButton 1'},
+      {name: 'button_id_2', title: 'CustomButton 2'},
+      ,
+    ],
+    storageOptions: {
+      skipBackup: true,
+      path: 'images',
+    },
+    maxWidth: 8000,
+    maxHeight: 8000,
+  };
+
+  const [imageSource, setImageSource] = useState('');
   const [user, setUser] = useState({});
   const [markers, setMarkers] = useState([
     {
@@ -60,6 +88,42 @@ const GoogleMap = () => {
     });
   }, []);
 
+  const showCamera = (): void => {
+    ImagePicker.launchCamera(options, (response) => {
+      if (response.error) {
+        console.log('LaunchCamera Error: ', response.error);
+      } else {
+        console.log(response.uri);
+        setImageSource(response.uri);
+      }
+    });
+  };
+
+  const showCameraRoll = (): void => {
+    ImagePicker.launchImageLibrary(options, (response) => {
+      if (response.error) {
+        console.log('LaunchImageLibrary Error: ', response.error);
+      } else {
+        axios
+          .post('http://13.209.217.56/api/v1/base', {
+            uploadFile: response.data,
+          })
+          .then((res) => console.log(res.data))
+          .catch((err) => console.log(err));
+
+        axios
+          .post('http://13.209.217.56/api/v1/native', {
+            latitude: response.latitude,
+            longitude: response.longitude,
+          })
+          .then((res) => console.log(res.data))
+          .catch((err) => console.log(err));
+
+        setImageSource(response.uri);
+      }
+    });
+  };
+
   return (
     <Container>
       <MapView
@@ -87,8 +151,12 @@ const GoogleMap = () => {
         ))}
       </MapView>
       <ButtonGroup>
-        <Button title="촬영" />
-        <Button title="앨범" />
+        <ImagePickerButton onPress={showCamera}>
+          <ButtonTitle>촬영</ButtonTitle>
+        </ImagePickerButton>
+        <ImagePickerButton onPress={showCameraRoll}>
+          <ButtonTitle>앨범</ButtonTitle>
+        </ImagePickerButton>
       </ButtonGroup>
     </Container>
   );
