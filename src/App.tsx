@@ -1,11 +1,12 @@
 import React, {useEffect, useState} from 'react';
 import Styled from 'styled-components/native';
-import {Text, Image} from 'react-native';
+import {Text, Image, Button} from 'react-native';
 import axios from 'axios';
 
 import MapView, {PROVIDER_GOOGLE, Marker} from 'react-native-maps';
 
 const Container = Styled.View`
+    
     flex: 1;
 `;
 
@@ -15,6 +16,12 @@ const Profile = Styled.Image`
     borderRadius: 75;
     borderWidth: 3;
     borderColor: rgb(255,255,255);
+`;
+
+const ButtonGroup = Styled.View`
+    flex-direction: row
+    justify-content: center
+    padding: 10px 0px
 `;
 
 const GoogleMap = () => {
@@ -79,6 +86,10 @@ const GoogleMap = () => {
           </Marker>
         ))}
       </MapView>
+      <ButtonGroup>
+        <Button title="촬영" />
+        <Button title="앨범" />
+      </ButtonGroup>
     </Container>
   );
 };
