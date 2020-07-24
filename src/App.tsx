@@ -1,8 +1,9 @@
 import React, {useEffect, useState} from 'react';
 import Styled from 'styled-components/native';
-import {Text, Image, Button} from 'react-native';
+import {Text, Image, Button, Platform} from 'react-native';
 import axios from 'axios';
 import ImagePicker from 'react-native-image-picker';
+import Geolocation from 'react-native-geolocation-service';
 
 import MapView, {PROVIDER_GOOGLE, Marker} from 'react-native-maps';
 
@@ -48,6 +49,8 @@ const GoogleMap = () => {
       skipBackup: true,
       path: 'images',
     },
+
+    allowsEditing: true,
     maxWidth: 8000,
     maxHeight: 8000,
   };
@@ -56,44 +59,58 @@ const GoogleMap = () => {
   const [user, setUser] = useState({});
   const [markers, setMarkers] = useState([
     {
-      title: 'home',
-      coordinates: {
-        latitude: 37.506892,
-        longitude: 127.020445,
-      },
+      latitude: 37.506892,
+      longitude: 127.020445,
+
       image: 'https://nearlog.s3.ap-northeast-2.amazonaws.com/static/home.png',
     },
     {
-      title: 'bien',
-      coordinates: {
-        latitude: 37.505973,
-        longitude: 127.022733,
-      },
+      latitude: 37.505973,
+      longitude: 127.022733,
+
       image: 'https://nearlog.s3.ap-northeast-2.amazonaws.com/static/bien.png',
     },
     {
-      title: 'bien',
-      coordinates: {
-        latitude: 37.506214,
-        longitude: 127.021748,
-      },
+      latitude: 37.506214,
+      longitude: 127.021748,
+
       image: 'https://nearlog.s3.ap-northeast-2.amazonaws.com/static/dopio.png',
     },
   ]);
 
   useEffect(() => {
+    if (Platform.OS === 'ios') {
+      Geolocation.requestAuthorization('always');
+    }
     axios.get('http://13.209.217.56/api/v1/user').then((response) => {
-      console.log(response);
       setUser(response.data.data[0]);
+      const email = response.data.data[0].email;
+      axios.get(`http://13.209.217.56/api/v1/poi/list/${email}`).then((res) => {
+        setMarkers([...markers, ...res.data.data]);
+        console.log(markers);
+      });
     });
   }, []);
+
+  useEffect(() => {}, [markers]);
 
   const showCamera = (): void => {
     ImagePicker.launchCamera(options, (response) => {
       if (response.error) {
         console.log('LaunchCamera Error: ', response.error);
       } else {
-        console.log(response.uri);
+        console.log(response.latitude);
+        axios
+          .post('http://13.209.217.56/api/v1/tmp', {
+            image: response.data,
+            type: response.type,
+            latitude: response.latitude,
+            longitude: response.longitude,
+            userId: 'bgpark82@gmail.com',
+          })
+          .then((res) => console.log(res.data))
+          .catch((err) => console.log(err));
+
         setImageSource(response.uri);
       }
     });
@@ -144,8 +161,10 @@ const GoogleMap = () => {
         {markers.map((marker, index) => (
           <Marker
             key={index}
-            coordinate={marker.coordinates}
-            title={marker.title}>
+            coordinate={{
+              latitude: marker.latitude,
+              longitude: marker.longitude,
+            }}>
             <Profile source={{url: marker.image}} />
           </Marker>
         ))}
