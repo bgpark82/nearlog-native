@@ -8,8 +8,19 @@ import Geolocation from 'react-native-geolocation-service';
 import MapView, {PROVIDER_GOOGLE, Marker} from 'react-native-maps';
 
 const Container = Styled.View`
-    
     flex: 1;
+    
+`;
+
+const Loading = Styled.View`
+  flex:1;
+  justify-content:center;
+  align-items:center;
+  
+`;
+
+const LoadingMessage = Styled.Text`
+  fontSize:20px;
 `;
 
 const Profile = Styled.Image`
@@ -52,7 +63,7 @@ const GoogleMap = () => {
     maxWidth: 8000,
     maxHeight: 8000,
   };
-  const [location, setLocation] = useState({latitude: 0, longitude: 0});
+  const [location, setLocation] = useState();
 
   const [imageSource, setImageSource] = useState('');
   const [user, setUser] = useState({});
@@ -82,20 +93,18 @@ const GoogleMap = () => {
       Geolocation.requestAuthorization('always');
     }
 
-    const _watchId = Geolocation.watchPosition(
+    Geolocation.getCurrentPosition(
       (position) => {
         const {latitude, longitude} = position.coords;
-        setLocation({latitude, longitude});
+        setLocation({
+          latitude,
+          longitude,
+        });
       },
       (error) => {
-        console.log(error);
+        console.log(error.code, error.message);
       },
-      {
-        enableHighAccuracy: true,
-        distanceFilter: 0,
-        interval: 5000,
-        fastestInterval: 2000,
-      },
+      {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
     );
 
     axios.get('http://13.209.217.56/api/v1/user').then((response) => {
@@ -106,12 +115,6 @@ const GoogleMap = () => {
         console.log(markers);
       });
     });
-
-    return () => {
-      if (_watchId) {
-        Geolocation.clearWatch(_watchId);
-      }
-    };
   }, []);
 
   useEffect(() => {}, [markers]);
@@ -121,7 +124,6 @@ const GoogleMap = () => {
       if (response.error) {
         console.log('LaunchCamera Error: ', response.error);
       } else {
-        console.log(response.latitude);
         axios
           .post('http://13.209.217.56/api/v1/image/upload', {
             image: response.data,
@@ -158,47 +160,54 @@ const GoogleMap = () => {
 
   return (
     <Container>
-      <MapView
-        onRegionChange={() => {
-          setLocation({
-            latitude: location.latitude,
-            longitude: location.longitude,
-          });
-        }}
-        onRegionChangeComplete={() => {
-          setLocation({
-            latitude: location.latitude,
-            longitude: location.longitude,
-          });
-        }}
-        style={{flex: 1}}
-        initialRegion={{
-          latitude: location.latitude,
-          longitude: location.longitude,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        }}
-        provider={PROVIDER_GOOGLE}>
-        <Marker
-          coordinate={{
-            latitude: location.latitude,
-            longitude: location.longitude,
+      {location ? (
+        <MapView
+          onRegionChange={() => {
+            setLocation({
+              latitude: location.latitude,
+              longitude: location.longitude,
+            });
           }}
-          title="this is a marker"
-          description="this is a marker example">
-          <Profile source={{url: user.profile}} />
-        </Marker>
-        {markers.map((marker, index) => (
+          onRegionChangeComplete={() => {
+            setLocation({
+              latitude: location.latitude,
+              longitude: location.longitude,
+            });
+          }}
+          style={{flex: 1}}
+          initialRegion={{
+            latitude: location.latitude,
+            longitude: location.longitude,
+            latitudeDelta: 0.0922,
+            longitudeDelta: 0.0421,
+          }}
+          provider={PROVIDER_GOOGLE}>
           <Marker
-            key={index}
             coordinate={{
-              latitude: marker.latitude,
-              longitude: marker.longitude,
-            }}>
-            <Profile source={{url: marker.image}} />
+              latitude: location.latitude,
+              longitude: location.longitude,
+            }}
+            title="this is a marker"
+            description="this is a marker example">
+            <Profile source={{url: user.profile}} />
           </Marker>
-        ))}
-      </MapView>
+          {markers.map((marker, index) => (
+            <Marker
+              key={index}
+              coordinate={{
+                latitude: marker.latitude,
+                longitude: marker.longitude,
+              }}>
+              <Profile source={{url: marker.image}} />
+            </Marker>
+          ))}
+        </MapView>
+      ) : (
+        <Loading>
+          <LoadingMessage>Loading...</LoadingMessage>
+        </Loading>
+        // <MapView style={{flex: 1}} provider={PROVIDER_GOOGLE} />
+      )}
       <ButtonGroup>
         <ImagePickerButton onPress={showCamera}>
           <ButtonTitle>촬영</ButtonTitle>
