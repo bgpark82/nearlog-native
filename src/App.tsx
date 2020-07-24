@@ -49,11 +49,10 @@ const GoogleMap = () => {
       skipBackup: true,
       path: 'images',
     },
-
-    allowsEditing: true,
     maxWidth: 8000,
     maxHeight: 8000,
   };
+  const [location, setLocation] = useState({latitude: 0, longitude: 0});
 
   const [imageSource, setImageSource] = useState('');
   const [user, setUser] = useState({});
@@ -82,6 +81,23 @@ const GoogleMap = () => {
     if (Platform.OS === 'ios') {
       Geolocation.requestAuthorization('always');
     }
+
+    const _watchId = Geolocation.watchPosition(
+      (position) => {
+        const {latitude, longitude} = position.coords;
+        setLocation({latitude, longitude});
+      },
+      (error) => {
+        console.log(error);
+      },
+      {
+        enableHighAccuracy: true,
+        distanceFilter: 0,
+        interval: 5000,
+        fastestInterval: 2000,
+      },
+    );
+
     axios.get('http://13.209.217.56/api/v1/user').then((response) => {
       setUser(response.data.data[0]);
       const email = response.data.data[0].email;
@@ -90,6 +106,12 @@ const GoogleMap = () => {
         console.log(markers);
       });
     });
+
+    return () => {
+      if (_watchId) {
+        Geolocation.clearWatch(_watchId);
+      }
+    };
   }, []);
 
   useEffect(() => {}, [markers]);
@@ -101,16 +123,17 @@ const GoogleMap = () => {
       } else {
         console.log(response.latitude);
         axios
-          .post('http://13.209.217.56/api/v1/tmp', {
+          .post('http://13.209.217.56/api/v1/image/upload', {
             image: response.data,
             type: response.type,
-            latitude: response.latitude,
-            longitude: response.longitude,
+            latitude: location.latitude,
+            longitude: location.longitude,
             userId: 'bgpark82@gmail.com',
           })
-          .then((res) => console.log(res.data))
+          .then((res) => {
+            setMarkers([...markers, res.data.data]);
+          })
           .catch((err) => console.log(err));
-
         setImageSource(response.uri);
       }
     });
@@ -122,18 +145,10 @@ const GoogleMap = () => {
         console.log('LaunchImageLibrary Error: ', response.error);
       } else {
         axios
-          .post('http://13.209.217.56/api/v1/base', {
+          .post('http://13.209.217.56/api/v1/image/upload', {
             uploadFile: response.data,
           })
-          .then((res) => console.log(res.data))
-          .catch((err) => console.log(err));
-
-        axios
-          .post('http://13.209.217.56/api/v1/native', {
-            latitude: response.latitude,
-            longitude: response.longitude,
-          })
-          .then((res) => console.log(res.data))
+          .then((res) => console.log(res.data.data))
           .catch((err) => console.log(err));
 
         setImageSource(response.uri);
@@ -144,16 +159,31 @@ const GoogleMap = () => {
   return (
     <Container>
       <MapView
+        onRegionChange={() => {
+          setLocation({
+            latitude: location.latitude,
+            longitude: location.longitude,
+          });
+        }}
+        onRegionChangeComplete={() => {
+          setLocation({
+            latitude: location.latitude,
+            longitude: location.longitude,
+          });
+        }}
         style={{flex: 1}}
         initialRegion={{
-          latitude: 37.506706,
-          longitude: 127.021544,
+          latitude: location.latitude,
+          longitude: location.longitude,
           latitudeDelta: 0.0922,
           longitudeDelta: 0.0421,
         }}
         provider={PROVIDER_GOOGLE}>
         <Marker
-          coordinate={{latitude: 37.506706, longitude: 127.021544}}
+          coordinate={{
+            latitude: location.latitude,
+            longitude: location.longitude,
+          }}
           title="this is a marker"
           description="this is a marker example">
           <Profile source={{url: user.profile}} />
