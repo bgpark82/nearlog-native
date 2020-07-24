@@ -88,6 +88,26 @@ const GoogleMap = () => {
     },
   ]);
 
+  let _watchId;
+
+  useEffect(() => {
+    _watchId = Geolocation.watchPosition(
+      (position) => {
+        const {latitude, longitude} = position.coords;
+        setLocation({latitude, longitude});
+      },
+      (error) => {
+        console.log(error);
+      },
+      {
+        enableHighAccuracy: true,
+        distanceFilter: 100,
+        interval: 5000,
+        fastestInterval: 2000,
+      },
+    );
+  }, [location]);
+
   useEffect(() => {
     if (Platform.OS === 'ios') {
       Geolocation.requestAuthorization('always');
@@ -115,6 +135,12 @@ const GoogleMap = () => {
         console.log(markers);
       });
     });
+
+    return () => {
+      if (_watchId !== null) {
+        Geolocation.clearWatch(_watchId);
+      }
+    };
   }, []);
 
   useEffect(() => {}, [markers]);
