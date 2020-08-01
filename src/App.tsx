@@ -9,18 +9,27 @@ import MapView, {PROVIDER_GOOGLE, Marker} from 'react-native-maps';
 
 const Container = Styled.View`
     flex: 1;
-    
 `;
 
 const Loading = Styled.View`
   flex:1;
   justify-content:center;
   align-items:center;
-  
 `;
 
 const LoadingMessage = Styled.Text`
   fontSize:20px;
+`;
+
+const ProfileWrapper = Styled.View`
+  position:relative;
+`;
+
+const Emoji = Styled.Text`
+  position:absolute;
+  top:0;
+  left:50;
+  right:50;
 `;
 
 const Profile = Styled.Image`
@@ -39,8 +48,8 @@ const ButtonGroup = Styled.View`
 `;
 
 const ImagePickerButton = Styled.TouchableOpacity`
-
 `;
+
 const ButtonTitle = Styled.Text`
     fontSize: 18px;
     color:rgb(29,137,255);
@@ -63,8 +72,8 @@ const GoogleMap = () => {
     maxWidth: 8000,
     maxHeight: 8000,
   };
-  const [location, setLocation] = useState();
 
+  const [location, setLocation] = useState();
   const [imageSource, setImageSource] = useState('');
   const [user, setUser] = useState({});
   const [markers, setMarkers] = useState([
@@ -112,7 +121,6 @@ const GoogleMap = () => {
     if (Platform.OS === 'ios') {
       Geolocation.requestAuthorization('always');
     }
-
     Geolocation.getCurrentPosition(
       (position) => {
         const {latitude, longitude} = position.coords;
@@ -174,11 +182,16 @@ const GoogleMap = () => {
       } else {
         axios
           .post('http://13.209.217.56/api/v1/image/upload', {
-            uploadFile: response.data,
+            image: response.data,
+            type: response.type,
+            latitude: location.latitude,
+            longitude: location.longitude,
+            userId: 'bgpark82@gmail.com',
           })
-          .then((res) => console.log(res.data.data))
+          .then((res) => {
+            setMarkers([...markers, res.data.data]);
+          })
           .catch((err) => console.log(err));
-
         setImageSource(response.uri);
       }
     });
@@ -232,7 +245,6 @@ const GoogleMap = () => {
         <Loading>
           <LoadingMessage>Loading...</LoadingMessage>
         </Loading>
-        // <MapView style={{flex: 1}} provider={PROVIDER_GOOGLE} />
       )}
       <ButtonGroup>
         <ImagePickerButton onPress={showCamera}>
